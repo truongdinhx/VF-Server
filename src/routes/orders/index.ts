@@ -15,7 +15,10 @@ import {
   confirmOrderAllocation,
 } from '../../controllers/orders';
 import { PERMISSION_CODE } from '../../domain/permission-codes';
+<<<<<<< HEAD
 import { ORDER_READ_PERMISSIONS } from '../../domain/order-access';
+=======
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
 import { requirePermission, verifyToken } from '../../middleware/auth';
 import {
   orderCreateSchema,
@@ -35,7 +38,12 @@ const orderRoutes: FastifyPluginAsync = async (fastify) => {
     verifyToken,
     requirePermission({
       anyOf: [
+<<<<<<< HEAD
         ...ORDER_READ_PERMISSIONS,
+=======
+        PERMISSION_CODE.SUPPLY_ORDER_CREATE,
+        PERMISSION_CODE.SUPPLY_ORDER_APPROVE,
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
       ],
     }),
   ];
@@ -47,6 +55,7 @@ const orderRoutes: FastifyPluginAsync = async (fastify) => {
     verifyToken,
     requirePermission(PERMISSION_CODE.SUPPLY_ORDER_ISSUE),
   ];
+<<<<<<< HEAD
   const orderAllocatePermission = [
     verifyToken,
     requirePermission(PERMISSION_CODE.SUPPLY_ORDER_ALLOCATE),
@@ -55,6 +64,8 @@ const orderRoutes: FastifyPluginAsync = async (fastify) => {
     verifyToken,
     requirePermission(PERMISSION_CODE.SUPPLY_ORDER_CONFIRM_ALLOCATION),
   ];
+=======
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
   fastify.post(
     '/',
     { preHandler: ownerPermission, schema: orderCreateSchema },
@@ -67,7 +78,11 @@ const orderRoutes: FastifyPluginAsync = async (fastify) => {
   );
   fastify.post(
     '/:id/submit',
+<<<<<<< HEAD
     { preHandler: ownerPermission, schema: orderSubmitSchema },
+=======
+    { preHandler: ownerPermission },
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
     submitOrder,
   );
   fastify.get(
@@ -101,7 +116,11 @@ const orderRoutes: FastifyPluginAsync = async (fastify) => {
   );
   fastify.post(
     '/:id/issue',
+<<<<<<< HEAD
     { preHandler: orderIssuePermission, schema: orderIssueSchema },
+=======
+    { preHandler: orderIssuePermission },
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
     issueOrder,
   );
   fastify.post(

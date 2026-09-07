@@ -30,11 +30,18 @@ describe('order source and receiving area flow', () => {
 
   it('scopes order creators without approval permission by the receiving area', () => {
     assert.match(orderService, /order\.to_area_id !== actor\.areaId/);
+<<<<<<< HEAD
     assert.match(orderService, /isOrderAreaScoped\(actor\)/);
     assert.match(orderService, /request = request\.eq\('to_area_id', actor\.areaId\)/);
     assert.match(orderAccess, /includesPermission\(access, PERMISSION_CODE\.SUPPLY_ORDER_CREATE\)/);
     assert.match(orderAccess, /!includesPermission\(access, PERMISSION_CODE\.SUPPLY_ORDER_APPROVE\)/);
     assert.match(orderAccess, /order\.to_area_id === access\.areaId/);
+=======
+    assert.match(orderService, /const isOwnerScoped = hasPermission\(/);
+    assert.match(orderService, /PERMISSION_CODE\.SUPPLY_ORDER_CREATE/);
+    assert.match(orderService, /!hasPermission\(actor, PERMISSION_CODE\.SUPPLY_ORDER_APPROVE\)/);
+    assert.match(orderService, /request = request\.eq\('to_area_id', actor\.areaId\)/);
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
     assert.match(
       orderDetailPage,
       /user\?\.publicData\.area_id === order\.to_area_id/,

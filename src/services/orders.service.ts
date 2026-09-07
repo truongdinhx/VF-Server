@@ -9,11 +9,14 @@ import {
   type PermissionCode,
 } from '../domain/permission-codes';
 import {
+<<<<<<< HEAD
   canReadOrder,
   isOrderAreaScoped,
   type OrderReadAccess,
 } from '../domain/order-access';
 import {
+=======
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
   assertApprovedQuantity,
   assertCancelReason,
   assertOrderActionAllowed,
@@ -43,7 +46,13 @@ import { NotificationsService } from './notifications.service';
 
 export interface OrderActor extends OrderReadAccess {
   id: string;
+<<<<<<< HEAD
   permissions: PermissionCode[];
+=======
+  areaId: string;
+  permissions: PermissionCode[];
+  isSystemAdmin: boolean;
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
 }
 
 interface SupplyLookup {
@@ -720,7 +729,15 @@ export class OrderService {
   }
 
   private assertOrderVisible(actor: OrderActor, order: OrderData): void {
+<<<<<<< HEAD
     if (!canReadOrder(actor, order)) {
+=======
+    const isOwnerScoped = hasPermission(
+      actor,
+      PERMISSION_CODE.SUPPLY_ORDER_CREATE,
+    ) && !hasPermission(actor, PERMISSION_CODE.SUPPLY_ORDER_APPROVE);
+    if (!actor.isSystemAdmin && isOwnerScoped && order.to_area_id !== actor.areaId) {
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
       serviceError(403, 'Order is outside your area scope');
     }
   }
@@ -1103,7 +1120,15 @@ export class OrderService {
       .from('orders')
       .select(ORDER_LIST_SELECT, { count: 'exact' })
       .eq('is_deleted', false);
+<<<<<<< HEAD
     if (isOrderAreaScoped(actor)) {
+=======
+    const isOwnerScoped = hasPermission(
+      actor,
+      PERMISSION_CODE.SUPPLY_ORDER_CREATE,
+    ) && !hasPermission(actor, PERMISSION_CODE.SUPPLY_ORDER_APPROVE);
+    if (!actor.isSystemAdmin && isOwnerScoped) {
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
       request = request.eq('to_area_id', actor.areaId);
     }
     if (statusId) request = request.eq('status_id', statusId);

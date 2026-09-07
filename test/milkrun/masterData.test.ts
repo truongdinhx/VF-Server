@@ -19,12 +19,15 @@ const read = (path: string): string =>
 const migration = read(
   'supabase/migrations/202608110004_milkrun_master_data.sql',
 );
+<<<<<<< HEAD
 const shopPermissionMigration = read(
   'supabase/migrations/20260813151215_adding_shop_permisions.sql',
 );
 const tripCatalogPermissionMigration = read(
   'supabase/migrations/20260821143648_add_trip_type_status_permissions.sql',
 );
+=======
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
 
 const replyRecorder = () => {
   const state: { statusCode?: number; payload?: unknown } = {};
@@ -143,6 +146,7 @@ describe('Phase 6 Milkrun master-data migration', () => {
 });
 
 describe('Phase 6 Milkrun CRUD contract', () => {
+<<<<<<< HEAD
   it('seeds the four dedicated Shop permissions without a database enum', () => {
     for (const code of [
       'milkrun.shop.read',
@@ -167,6 +171,8 @@ describe('Phase 6 Milkrun CRUD contract', () => {
     assert.doesNotMatch(tripCatalogPermissionMigration, /create type\s+/i);
   });
 
+=======
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
   it('normalizes business codes without an enum', () => {
     assert.equal(normalizeMilkrunCode('  rack_01  '), 'RACK_01');
   });
@@ -215,6 +221,7 @@ describe('Phase 6 Milkrun CRUD contract', () => {
     assert.match(vehicles, /MILKRUN_VEHICLE_ASSIGN/);
   });
 
+<<<<<<< HEAD
   it('guards every Shop operation with its dedicated permission', () => {
     const shops = read('src/routes/milkrun/shops/index.ts');
     assert.match(shops, /MILKRUN_SHOP_READ/);
@@ -245,6 +252,8 @@ describe('Phase 6 Milkrun CRUD contract', () => {
     ]) assert.match(tripStatuses, new RegExp(permission));
   });
 
+=======
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
   it('allows only the resolved system ADMIN context through the fallback guard', async () => {
     const denied = replyRecorder();
     await requireSystemAdmin(requestFor(false), denied.reply);

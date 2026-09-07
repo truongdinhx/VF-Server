@@ -23,7 +23,10 @@ interface RoleAccessRow {
 }
 
 interface UserRoleAccessRow {
+<<<<<<< HEAD
   user_id?: string;
+=======
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
   role_id: string;
   is_active: boolean;
   is_deleted: boolean;
@@ -187,6 +190,7 @@ export const getEffectivePermissions = async (
   );
 };
 
+<<<<<<< HEAD
 /**
  * Resolves all active application principals in three bounded database reads.
  * Notification fan-out uses this instead of one permission query per user.
@@ -259,6 +263,8 @@ export const getActiveAuthorizationContexts = async (
   return contexts;
 };
 
+=======
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
 export const hasPermission = (
   access: Pick<AuthorizationContext, 'permissions' | 'isSystemAdmin'>,
   permissionCode: PermissionCode,

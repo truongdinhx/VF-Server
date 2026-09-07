@@ -105,9 +105,15 @@ const replyRecorder = () => {
 };
 
 describe('Phase 2 dynamic RBAC authorization', () => {
+<<<<<<< HEAD
   it('keeps the TypeScript permission catalog unique after catalog extensions', () => {
     assert.equal(new Set(PERMISSION_CODES).size, PERMISSION_CODES.length);
     assert.ok(PERMISSION_CODES.includes(PERMISSION_CODE.SUPPLY_ORDER_ALLOCATE));
+=======
+  it('keeps the TypeScript permission catalog aligned with the 32 seeded codes', () => {
+    assert.equal(PERMISSION_CODES.length, 32);
+    assert.equal(new Set(PERMISSION_CODES).size, 32);
+>>>>>>> 651c96fbcbcdf824a3d8556b93a2b29598ec5231
   });
 
   it('returns HTTP 403 when a user does not have the required permission', async () => {
