@@ -1,12 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import type {} from '../plugins/dbContext';
-import type { RoleCode } from '../domain/enums';
 import type { ProviderRecord } from '../interfaces/database';
-import { PACKING_ROLE } from '../domain/permissions';
 import type {
   CreateSupplyBody,
   SupplyListQuery,
   SupplyProviderListQuery,
+  SupplyStackOptionsQuery,
   UpdateSupplyBody,
 } from '../interfaces/supplies';
 import {
@@ -94,8 +93,8 @@ export class SuppliesService {
     return this.fastify.supabaseAdmin;
   }
 
-  private selectFor(role: RoleCode): string {
-    return role === PACKING_ROLE ? PACKING_SELECT : FULL_SELECT;
+  private selectFor(canReadStock: boolean): string {
+    return canReadStock ? FULL_SELECT : PACKING_SELECT;
   }
 
   private async assertActiveReference(
@@ -164,7 +163,7 @@ export class SuppliesService {
     return normalizeSupplyProviders(data);
   }
 
-  async list(role: RoleCode, query: SupplyListQuery) {
+  async list(canReadStock: boolean, query: SupplyListQuery) {
     const isActive = parseActiveFilter(query.isActive ?? query.is_active);
     const isDeleted = parseActiveFilter(query.isDeleted, false);
     const categoryId = assertFilterId(query.categoryId ?? query.category_id, 'categoryId');
@@ -178,7 +177,7 @@ export class SuppliesService {
 
     let request = this.db
       .from('supplies')
-      .select(this.selectFor(role), { count: 'exact' })
+      .select(this.selectFor(canReadStock), { count: 'exact' })
       .eq('is_active', isActive)
       .eq('is_deleted', isDeleted);
 
@@ -206,10 +205,10 @@ export class SuppliesService {
     throw new Error('Unreachable pagination state');
   }
 
-  async get(role: RoleCode, id: string) {
+  async get(canReadStock: boolean, id: string) {
     const { data, error } = await this.db
       .from('supplies')
-      .select(this.selectFor(role))
+      .select(this.selectFor(canReadStock))
       .eq('id', id)
       .single();
     if (error || !data) databaseError(error, 'Không tìm thấy vật tư');
@@ -337,6 +336,120 @@ export class SuppliesService {
         (link as { provider: ProviderRecord | ProviderRecord[] | null }).provider,
       ))
       .filter((provider): provider is ProviderRecord => provider !== null);
+  }
+
+  async listStackOptions(id: string, query: SupplyStackOptionsQuery) {
+    const providerId = assertFilterId(query.provider_id, 'provider_id');
+    const areaId = assertFilterId(query.area_id, 'area_id');
+    if (!providerId || !areaId) fail(400, 'provider_id và area_id là bắt buộc');
+
+    const { data, error } = await this.db.rpc('get_supply_stack_options', {
+      p_supply_id: id,
+      p_provider_id: providerId,
+      p_area_id: areaId,
+    });
+    if (error) databaseError(error, 'Không thể lấy quy cách chồng đang tồn kho');
+
+    return ((data ?? []) as Array<{
+      set_per_qty: number | string;
+      available_stack_quantity: number | string;
+      available_total_set_quantity: number | string;
+    }>).map((option) => ({
+      set_per_qty: Number(option.set_per_qty),
+      available_stack_quantity: Number(option.available_stack_quantity),
+      available_total_set_quantity: Number(option.available_total_set_quantity),
+    }));
+  }
+
+  /**
+   * Non-authoritative pre-submit hint for the normal (non-stack) inventory
+   * dimension. Mirrors the grouping used by attachStockAvailability so the
+   * number matches what the Order detail will show after creation. The
+   * authoritative zero-stock gate stays in submit_order_to_pending.
+   */
+  async getAvailability(id: string, query: SupplyStackOptionsQuery) {
+    const providerId = assertFilterId(query.provider_id, 'provider_id');
+    const areaId = assertFilterId(query.area_id, 'area_id');
+    if (!providerId || !areaId) fail(400, 'provider_id và area_id là bắt buộc');
+
+    const { data: supply, error: supplyError } = await this.db
+      .from('supplies')
+      .select(`
+        id, is_active, is_deleted,
+        category:supply_categories!supplies_category_id_fkey(code, is_active, is_deleted)
+      `)
+      .eq('id', id)
+      .eq('is_active', true)
+      .eq('is_deleted', false)
+      .maybeSingle();
+    if (supplyError) databaseError(supplyError, 'Không thể tải vật tư');
+    if (!supply) fail(404, 'Vật tư không tồn tại hoặc đã ngừng hoạt động');
+
+    const category = firstRelation(
+      (supply as { category: { code: string; is_active: boolean; is_deleted: boolean }
+        | Array<{ code: string; is_active: boolean; is_deleted: boolean }> | null }).category,
+    );
+    const categoryCode = category && category.is_active && !category.is_deleted
+      ? category.code
+      : null;
+    if (!categoryCode) fail(400, 'Danh mục vật tư không hợp lệ');
+
+    const { count: providerLinkCount, error: providerLinkError } = await this.db
+      .from('supply_providers')
+      .select('provider:providers!supply_providers_provider_id_fkey!inner(id)', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('supply_id', id)
+      .eq('provider_id', providerId)
+      .eq('is_active', true)
+      .eq('is_deleted', false)
+      .eq('provider.is_active', true)
+      .eq('provider.is_deleted', false);
+    if (providerLinkError) databaseError(providerLinkError, 'Không thể kiểm tra Provider');
+    if ((providerLinkCount ?? 0) === 0) {
+      fail(400, 'Provider không liên kết với vật tư hoặc đã ngừng hoạt động');
+    }
+
+    const { data: area, error: areaError } = await this.db
+      .from('areas')
+      .select('id')
+      .eq('id', areaId)
+      .eq('is_active', true)
+      .eq('is_deleted', false)
+      .maybeSingle();
+    if (areaError) databaseError(areaError, 'Không thể kiểm tra Area');
+    if (!area) fail(400, 'Area không tồn tại hoặc đã ngừng hoạt động');
+
+    const { data: balances, error: balanceError } = await this.db
+      .from('stock_balances')
+      .select(`
+        quantity,
+        storage_location:storage_locations!stock_balances_storage_location_id_fkey!inner(id)
+      `)
+      .eq('supply_id', id)
+      .eq('provider_id', providerId)
+      .eq('area_id', areaId)
+      .is('set_per_qty', null)
+      .eq('is_active', true)
+      .eq('is_deleted', false)
+      .eq('storage_location.is_active', true)
+      .eq('storage_location.is_deleted', false);
+    if (balanceError) databaseError(balanceError, 'Không thể tính tồn khả dụng');
+
+    const availableQuantity = ((balances ?? []) as Array<{ quantity: number | string }>)
+      .reduce((total, row) => {
+        const quantity = Number(row.quantity);
+        return Number.isFinite(quantity) && quantity > 0 ? total + quantity : total;
+      }, 0);
+
+    return {
+      supply_id: id,
+      provider_id: providerId,
+      area_id: areaId,
+      category_code: categoryCode,
+      available_quantity: availableQuantity,
+    };
   }
 
   async remove(id: string) {

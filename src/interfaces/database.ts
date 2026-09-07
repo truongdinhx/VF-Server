@@ -1,15 +1,44 @@
-import type {
-  OrderStatus,
-  RoleCode,
-  StockTransactionType,
-} from '../domain/enums';
+import type { OrderStatus, StockTransactionType } from '../domain/enums';
 
 export interface RoleRecord {
   id: string;
-  code: RoleCode;
+  code: string;
   name: string;
   description: string | null;
   is_system: boolean;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PermissionRecord {
+  id: string;
+  code: string;
+  name: string;
+  module: string;
+  description: string | null;
+  is_system: boolean;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RolePermissionRecord {
+  id: string;
+  role_id: string;
+  permission_id: string;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserRoleRecord {
+  id: string;
+  user_id: string;
+  role_id: string;
   is_active: boolean;
   is_deleted: boolean;
   created_at: string;
@@ -43,6 +72,33 @@ export interface UserRecord {
   updated_at: string;
   first_name: string;
   last_name: string;
+}
+
+export interface WorkShiftRecord {
+  id: string;
+  code: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  crosses_midnight: boolean;
+  is_system: boolean;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserWorkShiftAssignmentRecord {
+  id: string;
+  user_id: string;
+  work_shift_id: string;
+  effective_from: string;
+  effective_to: string | null;
+  assigned_by: string;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SupplyCategoryRecord {
@@ -126,6 +182,9 @@ export interface StockBalanceRecord {
   area_id: string;
   storage_location_id: string;
   quantity: number;
+  set_per_qty: number | null;
+  stack_quantity: number | null;
+  total_set_quantity: number | null;
   is_active: boolean;
   is_deleted: boolean;
   created_at: string;
@@ -142,6 +201,7 @@ export interface OrderRecord {
   forklift_by: string | null;
   taken_away_by: string | null;
   status_id: string;
+  shift_order_sheet_id: string | null;
   note: string | null;
   rejected_reason: string | null;
   cancel_reason: string | null;
@@ -156,6 +216,47 @@ export interface OrderRecord {
   updated_at: string;
 }
 
+export interface SupplyShiftOrderSheetRecord {
+  id: string;
+  area_id: string;
+  work_shift_id: string;
+  work_date: string;
+  leader_id: string;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationRecord {
+  id: string;
+  domain: string;
+  type: string;
+  title: string;
+  message: string;
+  entity_type: string;
+  entity_id: string;
+  area_id: string | null;
+  created_by: string | null;
+  event_key: string;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationRecipientRecord {
+  id: string;
+  notification_id: string;
+  user_id: string;
+  is_read: boolean;
+  read_at: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface OrderItemRecord {
   id: string;
   order_id: string;
@@ -163,9 +264,50 @@ export interface OrderItemRecord {
   provider_id: string;
   unit_id: string;
   quantity_requested: number;
+  set_per_qty: number | null;
+  requested_stack_quantity: number | null;
+  requested_total_set_quantity: number | null;
   quantity_approved: number | null;
   quantity_issued: number | null;
   note: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderItemAllocationRecord {
+  id: string;
+  order_item_id: string;
+  stock_balance_id: string;
+  expected_stack_quantity: number;
+  actual_stack_quantity: number | null;
+  status: string | null;
+  discrepancy_reason: string | null;
+  allocated_at: string;
+  confirmed_at: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryDiscrepancyRecord {
+  id: string;
+  stock_balance_id: string;
+  order_id: string;
+  order_item_id: string;
+  allocation_id: string;
+  expected_stack_quantity: number;
+  actual_stack_quantity: number;
+  difference_stack_quantity: number;
+  reason: string | null;
+  status: 'OPEN' | 'RESOLVED';
+  reported_by: string;
+  reported_at: string;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  resolution_note: string | null;
   is_active: boolean;
   is_deleted: boolean;
   created_at: string;
@@ -180,10 +322,15 @@ export interface StockTransactionRecord {
   storage_location_id: string;
   order_id: string | null;
   order_item_id: string | null;
+  inventory_discrepancy_id: string | null;
   transaction_type_id: string;
   quantity: number;
   before_quantity: number;
   after_quantity: number;
+  set_per_qty: number | null;
+  stack_quantity: number | null;
+  before_stack_quantity: number | null;
+  after_stack_quantity: number | null;
   reason_id: string | null;
   reason_note: string | null;
   note: string | null;
@@ -263,6 +410,9 @@ export interface OrderRevisionRecord {
 export interface DatabaseRecordMap {
   users: UserRecord;
   roles: RoleRecord;
+  permissions: PermissionRecord;
+  role_permissions: RolePermissionRecord;
+  user_roles: UserRoleRecord;
   areas: AreaRecord;
   supply_categories: SupplyCategoryRecord;
   units: UnitRecord;
@@ -272,7 +422,12 @@ export interface DatabaseRecordMap {
   storage_locations: StorageLocationRecord;
   stock_balances: StockBalanceRecord;
   orders: OrderRecord;
+  supply_shift_order_sheets: SupplyShiftOrderSheetRecord;
+  notifications: NotificationRecord;
+  notification_recipients: NotificationRecipientRecord;
   order_items: OrderItemRecord;
+  order_item_allocations: OrderItemAllocationRecord;
+  inventory_discrepancies: InventoryDiscrepancyRecord;
   stock_transactions: StockTransactionRecord;
   order_statuses: OrderStatusRecord;
   stock_transaction_types: StockTransactionTypeRecord;

@@ -3,53 +3,78 @@ import {
   createSupply,
   deleteSupply,
   getSupply,
+  getSupplyAvailability,
   listSupplies,
   listSupplyProviders,
+  listSupplyStackOptions,
   updateSupply,
 } from '../../controllers/supplies';
-import { ROLE_CODES } from '../../domain/enums';
-import { MASTER_DATA_MANAGER_ROLES } from '../../domain/permissions';
-import { verifyTokenAndRole } from '../../middleware/auth';
+import { PERMISSION_CODE } from '../../domain/permission-codes';
+import { requirePermission, verifyToken } from '../../middleware/auth';
 import {
   idParamsSchema,
   supplyCreateSchema,
   supplyListQuerySchema,
   supplyProviderListQuerySchema,
+  supplyStackOptionsSchema,
   supplyUpdateSchema,
 } from '../../schemas/master-data';
 
 const supplyRoutes: FastifyPluginAsync = async (fastify) => {
+  const catalogReadPermission = [verifyToken, requirePermission(PERMISSION_CODE.SUPPLY_CATALOG_READ)];
   fastify.get(
     '/',
-    { preHandler: verifyTokenAndRole(ROLE_CODES), schema: supplyListQuerySchema },
+    { preHandler: catalogReadPermission, schema: supplyListQuerySchema },
     listSupplies,
   );
   fastify.get(
     '/:id/providers',
     {
-      preHandler: verifyTokenAndRole(ROLE_CODES),
+      preHandler: catalogReadPermission,
       schema: supplyProviderListQuerySchema,
     },
     listSupplyProviders,
   );
   fastify.get(
+    '/:id/stack-options',
+    {
+      preHandler: [
+        verifyToken,
+        requirePermission(PERMISSION_CODE.SUPPLY_ORDER_CREATE),
+      ],
+      schema: supplyStackOptionsSchema,
+    },
+    listSupplyStackOptions,
+  );
+  fastify.get(
+    '/:id/availability',
+    {
+      preHandler: [
+        verifyToken,
+        requirePermission(PERMISSION_CODE.SUPPLY_ORDER_CREATE),
+      ],
+      schema: supplyStackOptionsSchema,
+    },
+    getSupplyAvailability,
+  );
+  fastify.get(
     '/:id',
-    { preHandler: verifyTokenAndRole(ROLE_CODES), schema: idParamsSchema },
+    { preHandler: catalogReadPermission, schema: idParamsSchema },
     getSupply,
   );
   fastify.post(
     '/',
-    { preHandler: verifyTokenAndRole(MASTER_DATA_MANAGER_ROLES), schema: supplyCreateSchema },
+    { preHandler: [verifyToken, requirePermission(PERMISSION_CODE.SUPPLY_CATALOG_CREATE)], schema: supplyCreateSchema },
     createSupply,
   );
   fastify.patch(
     '/:id',
-    { preHandler: verifyTokenAndRole(MASTER_DATA_MANAGER_ROLES), schema: supplyUpdateSchema },
+    { preHandler: [verifyToken, requirePermission(PERMISSION_CODE.SUPPLY_CATALOG_UPDATE)], schema: supplyUpdateSchema },
     updateSupply,
   );
   fastify.delete(
     '/:id',
-    { preHandler: verifyTokenAndRole(MASTER_DATA_MANAGER_ROLES), schema: idParamsSchema },
+    { preHandler: [verifyToken, requirePermission(PERMISSION_CODE.SUPPLY_CATALOG_DELETE)], schema: idParamsSchema },
     deleteSupply,
   );
 };

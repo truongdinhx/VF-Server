@@ -2,12 +2,14 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import type {
   ApproveOrderBody,
   CancelOrderBody,
+  ConfirmAllocationBody,
   CreateOrderBody,
   IssueOrderBody,
   OrderListQuery,
   PatchOrderBody,
   ReceiveOrderBody,
   RejectOrderBody,
+  SubmitOrderBody,
 } from '../../interfaces/orders';
 import {
   OrderService,
@@ -24,8 +26,9 @@ const actorFrom = (request: FastifyRequest): OrderActor => {
   if (!request.user) throw new OrderServiceError(401, 'Unauthorized');
   return {
     id: request.user.id,
-    role: request.user.role,
     areaId: request.user.areaId,
+    permissions: request.user.permissions,
+    isSystemAdmin: request.user.isSystemAdmin,
   };
 };
 
@@ -45,7 +48,11 @@ const respond = async (
       return reply.code(error.statusCode).send({ error: error.message });
     }
     if (error instanceof OrderServiceError) {
-      return reply.code(error.statusCode).send({ error: error.message });
+      return reply.code(error.statusCode).send({
+        error: error.message,
+        ...(error.code ? { code: error.code } : {}),
+        ...(error.details ? { details: error.details } : {}),
+      });
     }
     request.log.error(error);
     return reply.code(500).send({ error: 'Internal server error' });
@@ -74,6 +81,7 @@ export const submitOrder = (request: FastifyRequest, reply: FastifyReply) =>
     new OrderService(request.server).submit(
       actorFrom(request),
       (request.params as { id: string }).id,
+      (request.body ?? {}) as SubmitOrderBody,
     ),
   );
 
@@ -101,6 +109,29 @@ export const approveOrder = (request: FastifyRequest, reply: FastifyReply) =>
       request.body as ApproveOrderBody,
     ),
   );
+
+export const allocateOrder = (request: FastifyRequest, reply: FastifyReply) =>
+  respond(request, reply, () =>
+    new OrderService(request.server).allocate(
+      actorFrom(request),
+      (request.params as { id: string }).id,
+    ),
+  );
+
+export const confirmOrderAllocation = (
+  request: FastifyRequest,
+  reply: FastifyReply,
+) => {
+  const params = request.params as { id: string; allocationId: string };
+  return respond(request, reply, () =>
+    new OrderService(request.server).confirmAllocation(
+      actorFrom(request),
+      params.id,
+      params.allocationId,
+      request.body as ConfirmAllocationBody,
+    ),
+  );
+};
 
 export const rejectOrder = (request: FastifyRequest, reply: FastifyReply) =>
   respond(request, reply, () =>

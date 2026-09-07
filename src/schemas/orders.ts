@@ -7,6 +7,9 @@ const orderItemProperties = {
   provider_id: uuid,
   unit_id: uuid,
   quantity_requested: { type: 'number', exclusiveMinimum: 0 },
+  set_per_qty: { type: 'number', exclusiveMinimum: 0 },
+  requested_stack_quantity: { type: 'number', exclusiveMinimum: 0 },
+  requested_total_set_quantity: { type: 'number', exclusiveMinimum: 0 },
   note: {
     anyOf: [
       { type: 'string', maxLength: 2000 },
@@ -34,9 +37,24 @@ export const orderCreateSchema = {
     properties: {
       from_area_id: uuid,
       to_area_id: uuid,
+      shift_order_sheet_id: uuid,
       note: { type: 'string', maxLength: 2000 },
       order_list: orderItems,
     },
+  },
+};
+
+export const orderSubmitSchema = {
+  params: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['id'],
+    properties: { id: uuid },
+  },
+  body: {
+    type: 'object',
+    additionalProperties: false,
+    properties: { shift_order_sheet_id: uuid },
   },
 };
 
@@ -54,6 +72,66 @@ export const orderPatchSchema = {
     properties: {
       note: { type: 'string', maxLength: 2000 },
       order_list: orderItems,
+    },
+  },
+};
+
+export const allocationConfirmSchema = {
+  params: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['id', 'allocationId'],
+    properties: { id: uuid, allocationId: uuid },
+  },
+  body: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['actual_stack_quantity'],
+    properties: {
+      actual_stack_quantity: { type: 'number', minimum: 0 },
+      reason: { type: 'string', maxLength: 2000 },
+    },
+  },
+};
+
+export const orderIssueSchema = {
+  params: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['id'],
+    properties: { id: uuid },
+  },
+  body: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['items'],
+    properties: {
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['order_item_id', 'issues'],
+          properties: {
+            order_item_id: uuid,
+            issues: {
+              type: 'array',
+              minItems: 1,
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['storage_location_id', 'quantity'],
+                properties: {
+                  storage_location_id: uuid,
+                  quantity: { type: 'number', exclusiveMinimum: 0 },
+                },
+              },
+            },
+          },
+        },
+      },
+      forklift_by: uuid,
+      taken_away_by: uuid,
     },
   },
 };

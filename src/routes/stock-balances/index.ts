@@ -3,18 +3,20 @@ import {
   getStockBalance,
   listStockBalances,
 } from '../../controllers/stock-balances';
-import { STOCK_VIEWER_ROLES } from '../../domain/permissions';
-import { verifyTokenAndRole } from '../../middleware/auth';
+import { PERMISSION_CODE } from '../../domain/permission-codes';
+import { requirePermission, verifyToken } from '../../middleware/auth';
 import {
   stockBalanceListSchema,
   stockIdParamsSchema,
+  inventoryDiscrepancyListSchema,
 } from '../../schemas/stock';
+import { listStockBalanceDiscrepancies } from '../../controllers/inventory-discrepancies';
 
 const stockBalanceRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     '/',
     {
-      preHandler: verifyTokenAndRole(STOCK_VIEWER_ROLES),
+      preHandler: [verifyToken, requirePermission(PERMISSION_CODE.SUPPLY_STOCK_READ)],
       schema: stockBalanceListSchema,
     },
     listStockBalances,
@@ -22,10 +24,18 @@ const stockBalanceRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     '/:id',
     {
-      preHandler: verifyTokenAndRole(STOCK_VIEWER_ROLES),
+      preHandler: [verifyToken, requirePermission(PERMISSION_CODE.SUPPLY_STOCK_READ)],
       schema: stockIdParamsSchema,
     },
     getStockBalance,
+  );
+  fastify.get(
+    '/:id/discrepancies',
+    {
+      preHandler: [verifyToken, requirePermission(PERMISSION_CODE.SUPPLY_STOCK_READ)],
+      schema: inventoryDiscrepancyListSchema,
+    },
+    listStockBalanceDiscrepancies,
   );
 };
 

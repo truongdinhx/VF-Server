@@ -4,17 +4,9 @@ import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import {
   ORDER_STATUSES,
-  ROLE_CODES,
   STOCK_TRANSACTION_TYPES,
 } from '../../src/domain/enums';
-import {
-  canApproveOrder,
-  canIssueOrder,
-  canManageSystem,
-  canManageUsers,
-  canMutateStock,
-  canViewStock,
-} from '../../src/domain/permissions';
+import { PERMISSION_CODE } from '../../src/domain/permission-codes';
 
 const migration = [
   '202607200003_backend_foundation.sql',
@@ -44,14 +36,7 @@ const interfaceProperties = (name: string): string[] => {
 };
 
 describe('Phase 1 backend foundation', () => {
-  it('uses lookup codes for the selected five roles and workflow values', () => {
-    assert.deepEqual(ROLE_CODES, [
-      'ADMIN',
-      'DATA_PACKING',
-      'DATA_MATERIAL',
-      'MATERIAL_LEADER',
-      'MATERIAL_CONTROL',
-    ]);
+  it('uses lookup codes for workflow values without a hard-coded role list', () => {
     assert.deepEqual(ORDER_STATUSES, [
       'DRAFT',
       'PENDING',
@@ -74,18 +59,17 @@ describe('Phase 1 backend foundation', () => {
       'EXPORT',
       'REVERSAL_IN',
       'REVERSAL_OUT',
+      'DISCREPANCY_CORRECTION',
     ]);
   });
 
-  it('keeps Material Control management read-only while allowing stock/review actions', () => {
-    assert.equal(canViewStock('MATERIAL_CONTROL'), true);
-    assert.equal(canApproveOrder('MATERIAL_CONTROL'), true);
-    assert.equal(canMutateStock('MATERIAL_CONTROL'), true);
-    assert.equal(canIssueOrder('MATERIAL_CONTROL'), true);
-    assert.equal(canManageUsers('MATERIAL_CONTROL'), false);
-    assert.equal(canManageSystem('MATERIAL_CONTROL'), false);
-    assert.equal(canManageUsers('ADMIN'), true);
-    assert.equal(canManageSystem('ADMIN'), true);
+  it('defines stable permission codes for backend authorization', () => {
+    assert.equal(PERMISSION_CODE.ADMIN_USER_READ, 'admin.user.read');
+    assert.equal(PERMISSION_CODE.ADMIN_ROLE_UPDATE, 'admin.role.update');
+    assert.equal(PERMISSION_CODE.SUPPLY_STOCK_READ, 'supply.stock.read');
+    assert.equal(PERMISSION_CODE.SUPPLY_STOCK_ADJUST, 'supply.stock.adjust');
+    assert.equal(PERMISSION_CODE.SUPPLY_ORDER_CREATE, 'supply.order.create');
+    assert.equal(PERMISSION_CODE.SUPPLY_ORDER_APPROVE, 'supply.order.approve');
   });
 
   it('defines exact record fields for all requested foundation models', () => {
@@ -131,17 +115,20 @@ describe('Phase 1 backend foundation', () => {
     ]);
     assert.deepEqual(interfaceProperties('StockBalanceRecord'), [
       'id', 'supply_id', 'provider_id', 'area_id', 'storage_location_id', 'quantity',
+      'set_per_qty', 'stack_quantity', 'total_set_quantity',
       'is_active', 'is_deleted', 'created_at', 'updated_at',
     ]);
     assert.deepEqual(interfaceProperties('OrderItemRecord'), [
       'id', 'order_id', 'supply_id', 'provider_id', 'unit_id',
-      'quantity_requested', 'quantity_approved', 'quantity_issued', 'note',
+      'quantity_requested', 'set_per_qty', 'requested_stack_quantity',
+      'requested_total_set_quantity', 'quantity_approved', 'quantity_issued', 'note',
       'is_active', 'is_deleted', 'created_at', 'updated_at',
     ]);
     assert.deepEqual(interfaceProperties('StockTransactionRecord'), [
       'id', 'supply_id', 'provider_id', 'area_id', 'storage_location_id', 'order_id',
-      'order_item_id', 'transaction_type_id', 'quantity', 'before_quantity',
-      'after_quantity', 'reason_id', 'reason_note', 'note', 'created_by',
+      'order_item_id', 'inventory_discrepancy_id', 'transaction_type_id', 'quantity', 'before_quantity',
+      'after_quantity', 'set_per_qty', 'stack_quantity', 'before_stack_quantity',
+      'after_stack_quantity', 'reason_id', 'reason_note', 'note', 'created_by',
       'is_active', 'is_deleted', 'created_at', 'updated_at',
     ]);
   });
